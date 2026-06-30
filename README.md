@@ -1,4 +1,4 @@
-# 🔥 Crucible
+# Crucible
 
 **Multi-Agent Testing Intelligence Platform**
 
