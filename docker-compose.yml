@@ -1,0 +1,39 @@
+version: "3.9"
+
+# Crucible — docker-compose
+# Both services share a named volume for the SQLite state file.
+# FastAPI writes to it; Streamlit reads from it (polling every 500ms).
+
+services:
+
+  webhook:
+    build: .
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - crucible_state:/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  dashboard:
+    build: .
+    command: streamlit run dashboard.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file: .env
+    volumes:
+      - crucible_state:/tmp
+    depends_on:
+      - webhook
+    restart: unless-stopped
+
+volumes:
+  crucible_state:
+    # Shared SQLite DB lives at /tmp/crucible_state.db inside both containers.
+    # STATE_DB=/tmp/crucible_state.db must be set in .env (matches the volume mount).
