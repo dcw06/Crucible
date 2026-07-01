@@ -8,8 +8,13 @@ Run:
     streamlit run dashboard.py --server.port 8501
 """
 
+import hashlib
+import hmac
+import json
+import os
 import time
 
+import httpx
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -17,6 +22,38 @@ load_dotenv(dotenv_path=".env", override=True)
 
 from agents.security import categorize_findings
 from state import get_run, list_runs
+
+WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
+DEMO_PAYLOAD = {
+    "action": "opened",
+    "number": 1,
+    "pull_request": {
+        "number": 1,
+        "title": "feat: add user analytics module",
+        "state": "open",
+        "head": {"sha": "demo", "ref": "demo/vulnerable-code"},
+        "base": {"ref": "main"},
+    },
+    "repository": {"name": "Crucible", "owner": {"login": "dcw06"}},
+}
+
+
+def _trigger_demo():
+    body = json.dumps(DEMO_PAYLOAD, separators=(",", ":")).encode()
+    sig = "sha256=" + hmac.new(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+    try:
+        httpx.post(
+            "http://localhost:8000/webhook",
+            content=body,
+            headers={
+                "Content-Type": "application/json",
+                "X-GitHub-Event": "pull_request",
+                "X-Hub-Signature-256": sig,
+            },
+            timeout=5,
+        )
+    except Exception:
+        pass
 
 # Outline §10 — exactly 9 display steps matching the demo plan
 # (state/db.py has a separate PIPELINE_STEPS used for step-label tracking;
@@ -45,6 +82,20 @@ st.set_page_config(
 
 st.sidebar.title("🔥 Crucible")
 st.sidebar.caption("Multi-Agent Testing Intelligence")
+st.sidebar.divider()
+
+st.sidebar.markdown(
+    "Crucible automatically generates tests, runs security scans, "
+    "and gates merges — triggered by every PR."
+)
+if st.sidebar.button("▶ Run Demo Pipeline", use_container_width=True, type="primary"):
+    _trigger_demo()
+    st.sidebar.success("Pipeline triggered! Watch the steps below.")
+
+st.sidebar.markdown(
+    "[![GitHub](https://img.shields.io/badge/GitHub-dcw06%2FCrucible-black?logo=github)]"
+    "(https://github.com/dcw06/Crucible)"
+)
 st.sidebar.divider()
 
 # Recent PRs dropdown
@@ -101,7 +152,23 @@ def render_dashboard(run: dict | None):
     with main_placeholder.container():
 
         if run is None:
-            st.info(f"No pipeline run found for PR #{pr_number}. Waiting for webhook…")
+            st.markdown("## 👋 Welcome to Crucible")
+            st.markdown(
+                "Crucible is a multi-agent CI/CD pipeline that automatically "
+                "generates tests, scans for vulnerabilities, and gates merges.\n\n"
+                "**Click ▶ Run Demo Pipeline** in the sidebar to watch it run live."
+            )
+            st.info("No pipeline run yet — trigger one from the sidebar to get started.")
+            with st.expander("How it works"):
+                st.markdown(
+                    "1. **Webhook** — GitHub PR triggers the pipeline\n"
+                    "2. **Requirements** — Claude extracts what the code should do\n"
+                    "3. **Writer ↔ Critic loop** — two agents adversarially generate & harden tests\n"
+                    "4. **Security scan** — Semgrep scans the PR source for vulnerabilities\n"
+                    "5. **pytest** — tests run locally\n"
+                    "6. **Test Cloud** — results uploaded to UiPath Test Manager\n"
+                    "7. **Gate decision** — APPROVED or BLOCKED with a PR comment"
+                )
             return
 
         step       = run.get("step", 0)
