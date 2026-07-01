@@ -17,6 +17,8 @@ Called by the background worker in main.py — never blocks the event loop.
 import asyncio
 import os
 import re
+import shutil
+import sys
 import tempfile
 import traceback
 from pathlib import Path
@@ -43,6 +45,17 @@ GITHUB_OWNER = os.environ.get("GITHUB_OWNER", "")
 GITHUB_REPO  = os.environ.get("GITHUB_REPO", "")
 MAESTRO_BASE = os.environ.get("MAESTRO_BASE_URL", "").rstrip("/")
 MAESTRO_TOKEN = os.environ.get("MAESTRO_TOKEN", "")
+
+def _resolve_bin(name: str) -> str:
+    """Resolve a binary: check PATH first, then the current venv's bin dir."""
+    found = shutil.which(name)
+    if found:
+        return found
+    candidate = Path(sys.executable).parent / name
+    if candidate.exists():
+        return str(candidate)
+    return name
+
 
 FRAGILE_PATTERNS = [
     r"time\.sleep\(",
@@ -263,7 +276,7 @@ async def run_pipeline(files: list[dict], pr_number: int) -> None:
 
         try:
             proc = await asyncio.create_subprocess_exec(
-                "pytest", test_file_path, f"--junitxml={xml_path}", "-v", "--tb=short",
+                _resolve_bin("pytest"), test_file_path, f"--junitxml={xml_path}", "-v", "--tb=short",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
