@@ -16,5 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Default command (overridden by docker-compose per service)
-ENV PORT=8000
-CMD uvicorn main:app --host 0.0.0.0 --port $PORT
+ENV PORT=8501
+RUN chmod +x start.sh
+CMD ["./start.sh"]
