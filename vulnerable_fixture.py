@@ -117,3 +117,6 @@ def format_user_greeting(name) -> str:
     Bug: No type check — format_user_greeting(None) raises AttributeError.
     """
     return f"Hello, {name.strip()}!"
+# demo
+# demo
+# demo
