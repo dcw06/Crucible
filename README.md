@@ -4,7 +4,7 @@
 
 The original implementation of a pull-request testing workflow: extract requirements, generate tests, critique them, scan changed source, run tests, and report execution results through UiPath Test Cloud.
 
-**[Expanded implementation](https://github.com/dcw06/Crucible-Updated-7-30-) · [Setup and architecture](docs/OPERATIONS.md) · [Core tests](https://github.com/dcw06/Crucible/actions)**
+**[Expanded implementation](https://github.com/dcw06/Crucible-Security) · [Setup and architecture](docs/OPERATIONS.md) · [Core tests](https://github.com/dcw06/Crucible/actions)**
 
 This repository remains public as a historical prototype. The expanded repository adds durable jobs, stricter evidence gates, upload scanning, and separate attested workers. Use that implementation when evaluating the later security architecture.
 
