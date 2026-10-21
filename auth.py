@@ -17,13 +17,12 @@ def verify_signature(payload_body: bytes, signature_header: str) -> bool:
     Uses positional args to avoid Python version compatibility issues:
         hmac.new(key, msg, digestmod)  — NOT hmac.new(key, msg=..., digestmod=...)
 
-    Returns True (skip verification) if GITHUB_WEBHOOK_SECRET is not set,
-    so dev environments without a secret configured don't break.
+    Returns False when GITHUB_WEBHOOK_SECRET is missing or blank.
+    Local development must also configure a webhook secret.
     """
     secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
-    if not secret:
-        print("[Auth] ⚠️  GITHUB_WEBHOOK_SECRET not set — skipping HMAC verification")
-        return True
+    if not secret.strip():
+        return False
 
     if not signature_header or not signature_header.startswith("sha256="):
         return False

@@ -60,6 +60,8 @@ async def pipeline_worker() -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
+    if not os.environ.get("GITHUB_WEBHOOK_SECRET", "").strip():
+        raise RuntimeError("GITHUB_WEBHOOK_SECRET is required")
     init_db()
     asyncio.create_task(pipeline_worker())
     print("[Crucible] Server started — pipeline worker running")

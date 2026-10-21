@@ -31,6 +31,15 @@ def _make_sig(payload: bytes, secret: str = SECRET) -> str:
 
 
 class TestVerifySignature:
+    def test_missing_secret_rejects_unsigned_and_signed_requests(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_WEBHOOK_SECRET", raising=False)
+        assert verify_signature(PAYLOAD, "") is False
+        assert verify_signature(PAYLOAD, _make_sig(PAYLOAD)) is False
+
+    def test_blank_secret_rejects_requests(self, monkeypatch):
+        monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", "  ")
+        assert verify_signature(PAYLOAD, "") is False
+
     def test_valid_signature(self):
         """Valid HMAC-SHA256 signature is accepted."""
         sig = _make_sig(PAYLOAD)
